@@ -1,0 +1,7 @@
+src/secrets.h
+.pio/
+.vscode/
+*.log
+.DS_Store
+__pycache__/
+*.bak
