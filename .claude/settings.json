@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(g++ -std=c++17 *)",
+      "Bash(pio run*)",
+      "Bash(pio device monitor*)",
+      "Bash(python hardware/case/case.py)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "deny": ["Read(./src/secrets.h)"]
+  }
+}
