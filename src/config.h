@@ -4,7 +4,9 @@
 
 // Wake-capable inputs. On the ESP32-C6 only GPIO0..GPIO7 (LP IO) can wake from deep sleep.
 // Wire each input to GND through the switch, with an external 1 Mohm pull-up to 3V3.
-constexpr int PIN_ROCKER  = 0;  // closed = slave mode
+// PIN_MODE is the mode slide switch (mini SPDT, middle pin + one outer pin used as SPST):
+// closed to GND = slave mode. It wakes on the level opposite its current one.
+constexpr int PIN_MODE    = 0;  // closed = slave mode
 constexpr int PIN_SELECT  = 1;
 constexpr int PIN_ROLE    = 2;
 constexpr int PIN_SEND    = 3;
@@ -17,6 +19,9 @@ constexpr int PIN_EPD_CS   = 18;
 constexpr int PIN_EPD_DC   = 19;
 constexpr int PIN_EPD_RST  = 20;
 constexpr int PIN_EPD_BUSY = 21;
+
+// The second slide switch (device power) sits in series with the battery positive lead and
+// has no GPIO: off cuts everything, including USB charging through the battery connector.
 
 // I2C for the optional MAX17048 fuel gauge.
 constexpr int PIN_SDA = 6;

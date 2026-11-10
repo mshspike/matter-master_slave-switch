@@ -3,7 +3,8 @@
 A battery-powered handheld switch that turns outlets on a TP-Link Tapo P304M (UK) Matter power strip on and off.
 Built for a workshop master/slave pair (for example a table saw and a vacuum): on/off only, no power-draw sensing.
 
-- A rocker switch picks **normal** or **slave** mode.
+- A **mode** slide switch picks **normal** or **slave** mode.
+- A **power** slide switch turns the whole device on and off.
 - **Normal mode:** *Send* toggles the selected outlet.
 - **Slave mode:** *Send* toggles every outlet marked *master*, and every *slave* outlet takes the same state.
 - A 2.13 in e-paper screen shows the mode, each outlet's role and state, and the battery level.
@@ -42,14 +43,24 @@ Only GPIO0 to GPIO7 can wake the ESP32-C6 from deep sleep.
 
 | Signal | GPIO |
 |---|---|
-| Rocker (closed = slave mode) | 0 |
+| Mode slide switch (closed = slave mode) | 0 |
 | Select / Role / Send / Refresh | 1 / 2 / 3 / 4 |
 | e-paper SCK / MOSI / CS / DC / RST / BUSY | 23 / 22 / 18 / 19 / 20 / 21 |
 | Fuel gauge SDA / SCL (optional) | 6 / 7 |
+| Power slide switch | no GPIO: in series with the battery positive lead |
+
+Both slide switches are mini SPDT parts used as SPST: wire the middle pin and one outer pin, leave the other outer pin unconnected.
+
+- **Mode switch:** middle pin to GPIO0 (with its 1 MΩ pull-up), outer pin to GND. Closed = slave mode. Flipping it wakes the board and redraws the screen.
+- **Power switch:** cell + to the middle pin, outer pin to the + wire of the board's battery connector. Off cuts everything.
+  Because the switch sits before the charger, **USB-C charging only works with the power switch on**.
+  The e-paper keeps its last image when the power is off, so the screen does not show that the device is off.
 
 ## Case
 
-`hardware/case/case.py` builds two parts with no screws: a back shell with an 18650 cradle, ESP32 pocket, button-board ledges and a USB-C slot, and a snap-fit lid with the display window, four button holes and the rocker cutout.
+`hardware/case/case.py` builds two parts with no screws: a back shell with an 18650 cradle, ESP32 pocket, button-board ledges and a USB-C slot, and a snap-fit lid with the display window, four button holes and two slide-switch slots (mode on the left, power on the right).
+Each slide switch sits under the lid with its handle through the slot. Printed pins go through the switch's two mounting ears and are heat-staked with a soldering iron, so no screws are needed.
+Slide switch sizes vary by maker: measure yours (body, ear hole spacing and diameter, handle size and travel) and edit the `SLIDE_*` parameters before printing.
 Run `python hardware/case/case.py` (needs `trimesh`, `manifold3d`, `numpy`, `networkx`, `scipy`) to regenerate `hardware/case/stl/`.
 Print the back open-face up and the lid outside-face down, in PETG.
 
@@ -67,7 +78,7 @@ Buy the 18650 cell from a UK authorised dealer, not AliExpress.
 | Core | Waveshare 2.13in e-Paper HAT, black/white, 250x122, SPI | Waveshare 2.13inch e-Paper HAT (V4) | 1 | £14.40 |
 | Core | Protected 18650 cell, 3000 mAh, button top | BAK N18650CK (protected) | 1 | £5.45 |
 | Core | 18650 spring and flat contact plates for a printed cell bay (pack) | Generic 18650 battery contact set | 1 | £3.00 |
-| Core | Mini rocker switch, SPST 2-pin (normal / slave mode) | KCD11 mini rocker (check cutout size in the listing) | 1 | £1.50 |
+| Core | Mini SPDT slide switch, 3-pin, two mounting ears, tall handle (one for mode, one for power; pack of 10) | SS-12F15 family (confirm the exact part and measure it) | 1 | £4.00 |
 | Core | 12 x 12 mm tactile click switches with caps (pack of 10) | Generic 12x12x7.3 mm tactile switch | 1 | £3.00 |
 | Core | 1 MΩ 1/4 W resistors (pack of 20) | Generic 1M 1/4W | 1 | £2.00 |
 | Core | 26 AWG silicone hookup wire, 6 colours | Generic 26AWG silicone wire | 1 | £6.00 |
@@ -83,7 +94,7 @@ Buy the 18650 cell from a UK authorised dealer, not AliExpress.
 | Tools | Solder, 0.8 mm | Generic 0.8 mm solder | 1 | £6.00 |
 | Tools | Multimeter with µA range, to measure sleep current | e.g. UNI-T UT61E+ class | 1 | £55.00 |
 
-Core parts about £106, optional parts about £7, tools about £96. Alternative: a DFRobot FireBeetle 2 ESP32-S3 instead of the C6 if you run Matter controller firmware.
+Core parts about £109, optional parts about £7, tools about £96. Alternative: a DFRobot FireBeetle 2 ESP32-S3 instead of the C6 if you run Matter controller firmware.
 
 **Safety.** The build has no mains wiring. The strip is rated 3250 W / 13 A, but its motor rating is unclear: switch large induction motors through a motor-rated contactor and use the strip only as the signal. Protect the Li-ion cell, and insulate contacts with Kapton tape.
 
