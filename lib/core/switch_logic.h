@@ -30,7 +30,7 @@ class Logic {
   bool on[kOutlets] = {false, false, false, false};  // last state we sent (assumed)
   uint8_t selected = 0;
 
-  // The rocker switch selects the mode.
+  // The mode slide switch selects the mode.
   Result setMode(Mode m);
   // A click button was pressed.
   Result press(Input in);

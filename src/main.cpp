@@ -64,7 +64,7 @@ static bool pressed(int pin) { return digitalRead(pin) == LOW; }
 
 static void setupInputs() {
   // External 1 Mohm pull-ups: the internal ones leak far more in deep sleep.
-  for (int p : {PIN_ROCKER, PIN_SELECT, PIN_ROLE, PIN_SEND, PIN_REFRESH}) pinMode(p, INPUT);
+  for (int p : {PIN_MODE, PIN_SELECT, PIN_ROLE, PIN_SEND, PIN_REFRESH}) pinMode(p, INPUT);
 }
 
 static bool debounced(int pin) {
@@ -149,10 +149,10 @@ static void goToSleep() {
                                (gpio_num_t)PIN_REFRESH};
   uint64_t clickMask = 0;
   for (auto p : clicks) clickMask |= 1ULL << p;
-  // Buttons wake on LOW (pressed). The rocker wakes on the level opposite its current one.
+  // Buttons wake on LOW (pressed). The mode slide switch wakes on the level opposite its current one.
   esp_deep_sleep_enable_gpio_wakeup(clickMask, ESP_GPIO_WAKEUP_GPIO_LOW);
-  esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_ROCKER,
-                                    pressed(PIN_ROCKER) ? ESP_GPIO_WAKEUP_GPIO_HIGH : ESP_GPIO_WAKEUP_GPIO_LOW);
+  esp_deep_sleep_enable_gpio_wakeup(1ULL << PIN_MODE,
+                                    pressed(PIN_MODE) ? ESP_GPIO_WAKEUP_GPIO_HIGH : ESP_GPIO_WAKEUP_GPIO_LOW);
   WiFi.mode(WIFI_OFF);
   esp_deep_sleep_start();
 }
@@ -177,9 +177,11 @@ void setup() {
   }
 
   Result total;
-  bool redraw = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED;  // first power-up
+  // First power-up, including turning the power slide switch back on: always redraw.
+  bool redraw = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED;
 
-  Result r = logic.setMode(pressed(PIN_ROCKER) ? Mode::Slave : Mode::Normal);
+  delay(DEBOUNCE_MS);  // let the slide switch contacts settle if it caused the wake
+  Result r = logic.setMode(pressed(PIN_MODE) ? Mode::Slave : Mode::Normal);
   redraw |= r.redraw;
 
   const struct { int pin; Input in; } buttons[] = {

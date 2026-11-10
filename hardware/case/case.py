@@ -2,7 +2,8 @@
 
 Two printed parts, no screws and no inserts:
   back.stl  : shell with 18650 cradle, ESP32 board pocket, button-board ledges, USB-C slot
-  front.stl : lid with display window, 4 button holes, rocker cutout; its lip snaps into the back
+  front.stl : lid with display window, 4 button holes, two slide-switch slots (mode, power);
+              its lip snaps into the back
 
 Print: back with the open face up; front with the outside face down. PETG, 0.2 mm layers, 3 walls.
 All sizes are nominal datasheet values. MEASURE YOUR PARTS and edit the PARAMETERS before printing.
@@ -58,8 +59,21 @@ DISP_FRAME_H = 5.0
 BTN_Y = 66.0
 BTN_X = [23.0, 37.0, 51.0, 65.0]  # centres of the four buttons
 BTN_HOLE = 10.5
-ROCKER_Y = 84.0
-ROCKER_CUT = (20.0, 14.0)         # KCD11 mini rocker panel cutout, check your part
+# Two mini SPDT slide switches with mounting ears (SS-12F15 family), mounted under the lid with
+# the handle through a slot: left = mode (normal / slave), right = device power.
+# Sizes vary by maker: MEASURE the switch you buy (body, ear hole spacing and diameter, ear
+# thickness, handle size and travel) and edit these before printing.
+SLIDE_Y = 84.0
+SLIDE_X = [W / 2.0 - 18.0, W / 2.0 + 18.0]  # centres: mode (left), power (right)
+SLIDE_BODY = (12.7, 6.6)          # body footprint (along travel, across)
+SLIDE_HANDLE = (2.0, 3.0)         # handle cross-section (along travel, across)
+SLIDE_TRAVEL = 3.0                # handle travel end to end
+SLIDE_CLEAR = 1.0                 # clearance around the handle in the slot
+SLIDE_EAR_PITCH = 19.0            # ear hole centre to centre
+SLIDE_EAR_HOLE = 2.2              # ear hole diameter
+SLIDE_EAR_T = 0.6                 # ear thickness
+STAKE_D = 1.9                     # printed pin through each ear hole, heat-staked after fitting
+STAKE_L = SLIDE_EAR_T + 1.5       # pin length below the lid (leaves 1.5 mm to melt over)
 
 FL = WALL - 0.3  # features start slightly inside the floor so unions fuse
 INNER_W, INNER_H = W - 2 * WALL, H - 2 * WALL
@@ -131,6 +145,7 @@ for xw in (0, W - WALL):
         back = back.cut(box(xw - 0.1, yw - 4, SNAP_Z - 1.5, xw + WALL + 0.1, yw + 4, SNAP_Z + 1.5))
 
 # ---------------- FRONT LID ----------------
+Z0_PLATE = FP - 0.3               # inside features start just inside the plate so unions fuse
 front = box(0, 0, 0, W, H, FP)
 # Lip that enters the back shell (z from FP upward in print orientation: built in +Z, flipped later)
 LIP_H, LIP_T = 5.0, 1.2
@@ -142,13 +157,24 @@ for xb, d in ((WALL + TOL - 0.5, 1), (W - WALL - TOL - 0.3, -1)):
     for yw in (H * 0.30, H * 0.70):
         front = front.union(box(xb, yw - 3.5, FP + LIP_H - 2.0, xb + 0.8, yw + 3.5, FP + LIP_H - 0.6))
 
-# Window, button holes, rocker cutout (through the plate)
+# Window, button holes, slide-switch slots (through the plate)
 disp_cy = DISP_Y0 + DISP_W / 2.0
 front = front.cut(box(cx - WIN_L / 2, disp_cy - WIN_W / 2, -1, cx + WIN_L / 2, disp_cy + WIN_W / 2, FP + 1))
 for bx in BTN_X:
     front = front.cut(cyl(BTN_HOLE / 2, FP + 2, (bx + (cx - 44.0), BTN_Y, FP / 2)))
-front = front.cut(box(cx - ROCKER_CUT[0] / 2, ROCKER_Y - ROCKER_CUT[1] / 2, -1,
-                      cx + ROCKER_CUT[0] / 2, ROCKER_Y + ROCKER_CUT[1] / 2, FP + 1))
+slot_x = SLIDE_HANDLE[0] + SLIDE_TRAVEL + 2 * SLIDE_CLEAR
+slot_y = SLIDE_HANDLE[1] + 2 * SLIDE_CLEAR
+for sx in SLIDE_X:
+    front = front.cut(box(sx - slot_x / 2, SLIDE_Y - slot_y / 2, -1, sx + slot_x / 2, SLIDE_Y + slot_y / 2, FP + 1))
+    # The ears sit flat on the lid underside; a printed pin goes through each ear hole and is
+    # heat-staked (melted over with a soldering iron), so the switches need no screws.
+    for ex in (sx - SLIDE_EAR_PITCH / 2, sx + SLIDE_EAR_PITCH / 2):
+        front = front.union(cyl(STAKE_D / 2, STAKE_L + 0.3, (ex, SLIDE_Y, FP - 0.3 + (STAKE_L + 0.3) / 2)))
+    # Locating ribs either side of the body (across travel) stop it twisting before staking.
+    for sy in (-1, 1):
+        y0 = SLIDE_Y + sy * (SLIDE_BODY[1] / 2 + TOL)
+        front = front.union(box(sx - SLIDE_BODY[0] / 2 + 1, min(y0, y0 + sy * 1.2), Z0_PLATE,
+                                sx + SLIDE_BODY[0] / 2 - 1, max(y0, y0 + sy * 1.2), FP + 2.0))
 
 # Display frame on the inside face, with two flexing hooks on the long edges
 fx0, fx1 = cx - DISP_L / 2 - TOL, cx + DISP_L / 2 + TOL
